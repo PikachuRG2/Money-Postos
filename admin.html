@@ -65,6 +65,7 @@
             status.innerText = "Processando...";
 
             const userRef = db.collection("usuarios").doc(userId);
+            const transacaoRef = db.collection("transacoes").doc(); // Novo ID único
 
             db.runTransaction((transaction) => {
                 return transaction.get(userRef).then((userDoc) => {
@@ -73,7 +74,20 @@
                     }
 
                     const novoSaldo = (userDoc.data().saldo || 0) + valorAdicionar;
+                    
+                    // Atualizar saldo do usuário
                     transaction.update(userRef, { saldo: novoSaldo });
+
+                    // Registrar transação
+                    transaction.set(transacaoRef, {
+                        userId: userId,
+                        adminId: auth.currentUser.uid,
+                        quantidadeProdutos: qtd,
+                        valor: valorAdicionar,
+                        data: firebase.firestore.FieldValue.serverTimestamp(),
+                        tipo: 'ganho'
+                    });
+
                     return valorAdicionar;
                 });
             }).then((valor) => {

@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Função para verificar se o usuário está logado
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Função para verificar se o usuário é o dono do documento
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Função para verificar se o usuário é admin
+    function isAdmin() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Regras para a coleção de usuários
+    match /usuarios/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn(); // No cadastro inicial
+      allow update: if isSignedIn() && isAdmin(); // Apenas admin altera saldo/role
+      allow delete: if isAdmin();
+    }
+
+    // Regras para a coleção de transações
+    match /transacoes/{transacaoId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isSignedIn() && isAdmin(); // Apenas admin cria transações
+      allow update: if false; // Transações não devem ser editadas
+      allow delete: if isAdmin();
+    }
+  }
+}

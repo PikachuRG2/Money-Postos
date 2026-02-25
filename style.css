@@ -150,6 +150,34 @@ a {
     margin-top: 10px;
 }
 
+/* History Specific */
+.history-container {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.history-container h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.transaction-item {
+    background: #3d3d3d;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.trans-val {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
 /* Admin Specific */
 .form-group {
     text-align: left;

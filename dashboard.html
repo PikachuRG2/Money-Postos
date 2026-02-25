@@ -35,6 +35,13 @@
                     <p id="user-id-display"></p>
                 </div>
             </div>
+
+            <div class="history-container">
+                <h3>Últimas Transações</h3>
+                <div id="transaction-list">
+                    <p>Nenhuma transação encontrada.</p>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -51,6 +58,32 @@
                         document.getElementById('user-id-display').innerText = "ID: " + user.uid;
                     }
                 });
+
+                // Buscar histórico de transações em tempo real
+                db.collection("transacoes")
+                    .where("userId", "==", user.uid)
+                    .orderBy("data", "desc")
+                    .limit(5)
+                    .onSnapshot((snapshot) => {
+                        const list = document.getElementById('transaction-list');
+                        if (snapshot.empty) {
+                            list.innerHTML = "<p>Nenhuma transação encontrada.</p>";
+                            return;
+                        }
+                        
+                        list.innerHTML = "";
+                        snapshot.forEach((doc) => {
+                            const t = doc.data();
+                            const data = t.data ? t.data.toDate().toLocaleDateString('pt-BR') : 'Recent...';
+                            const div = document.createElement('div');
+                            div.className = 'transaction-item';
+                            div.innerHTML = `
+                                <span>${data}</span>
+                                <span class="trans-val">+ R$ ${t.valor.toFixed(2).replace('.', ',')}</span>
+                            `;
+                            list.appendChild(div);
+                        });
+                    });
             } else {
                 window.location.href = "index.html";
             }
