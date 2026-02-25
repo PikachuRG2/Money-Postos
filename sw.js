@@ -7,6 +7,8 @@ const ASSETS = [
     './style.css',
     './firebase-config.js',
     './manifest.json',
+    './icon_192.png',
+    './icon_512.png',
     'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
     'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js',
     'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js',
