@@ -32,6 +32,7 @@
                 <input type="email" id="login-email" placeholder="E-mail">
                 <input type="password" id="login-password" placeholder="Senha">
                 <button onclick="login()">Entrar</button>
+                <p><a href="#" onclick="forgotPassword()" style="font-size: 0.85rem; color: #aaa;">Esqueci minha senha</a></p>
                 <p>Não tem conta? <a href="#" onclick="toggleAuth()">Cadastre-se</a></p>
             </div>
 
@@ -86,6 +87,24 @@
                 .catch((error) => {
                     alert("Erro ao entrar: " + error.message);
                 });
+        }
+
+        function forgotPassword() {
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                alert("Por favor, digite seu e-mail no campo acima para redefinir a senha.");
+                return;
+            }
+
+            if (confirm(`Deseja enviar um e-mail de redefinição de senha para ${email}?`)) {
+                auth.sendPasswordResetEmail(email)
+                    .then(() => {
+                        alert("E-mail de redefinição enviado! Verifique sua caixa de entrada (e o spam).");
+                    })
+                    .catch((error) => {
+                        alert("Erro ao enviar e-mail: " + error.message);
+                    });
+            }
         }
 
         function signup() {
