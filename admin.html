@@ -32,7 +32,8 @@
 
         <nav class="admin-nav">
             <button onclick="showSection('dashboard')" id="nav-dashboard" class="active">📊 Dashboard</button>
-            <button onclick="showSection('lancar')" id="nav-lancar">⚡ Lançar Cashback</button>
+            <button onclick="showSection('lancar')" id="nav-lancar">⚡ Dar Cashback</button>
+            <button onclick="showSection('resgate')" id="nav-resgate" style="background: #e67e22; color: white;">💰 Resgatar Saldo</button>
             <button onclick="showSection('produtos')" id="nav-produtos">📦 Produtos</button>
             <button onclick="showSection('usuarios')" id="nav-usuarios">👥 Usuários</button>
             <button onclick="showSection('historico')" id="nav-historico">📜 Histórico</button>
@@ -68,26 +69,27 @@
         <!-- Seção: Lançar -->
         <section id="section-lancar" class="admin-section">
             <main class="admin-card">
-                <h2>Lançar Cashback</h2>
+                <h2>⚡ Dar Cashback ao Cliente</h2>
                 
-                <div id="reader-container" style="margin-bottom: 20px; display: none;">
-                    <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden;"></div>
-                    <button onclick="stopScanner()" class="btn-logout" style="margin-top: 10px;">Fechar Câmera</button>
+                <div id="reader-container-lancar" class="scanner-container" style="margin-bottom: 20px; display: none;">
+                    <div id="reader-lancar" style="width: 100%; border-radius: 10px; overflow: hidden;"></div>
+                    <button onclick="stopScanner('lancar')" class="btn-logout" style="margin-top: 10px;">Fechar Câmera</button>
                 </div>
 
-                <button id="start-scan-btn" onclick="startScanner()" class="btn-primary" style="margin-bottom: 20px; background: #2980b9; color: white;">📷 Escanear QR Code</button>
+                <button id="start-scan-btn-lancar" onclick="startScanner('lancar')" class="btn-primary" style="margin-bottom: 20px; background: #2980b9; color: white;">📷 Escanear QR do Cliente</button>
 
                 <div class="form-group">
-                    <label for="transaction-token">Código da Transação (8 dígitos):</label>
-                    <input type="text" id="transaction-token" placeholder="Digite o código ou escaneie o QR" maxlength="8" style="text-transform: uppercase; font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 2px;">
+                    <label for="transaction-token-lancar">Código da Transação (8 dígitos):</label>
+                    <input type="text" id="transaction-token-lancar" placeholder="Digite o código ou escaneie o QR" maxlength="8" style="text-transform: uppercase; font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 2px;">
                 </div>
+
                 <div class="form-group" id="qtd-group">
                     <label for="qtd-produtos">Quantidade (Global):</label>
                     <input type="number" id="qtd-produtos" value="1" min="1">
                 </div>
 
                 <div class="form-group">
-                    <label>Selecione os Produtos (Apenas para GANHO):</label>
+                    <label>Selecione os Produtos:</label>
                     <div id="products-selection-list" class="products-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                         <!-- Preenchido via JS -->
                         <p>Carregando produtos...</p>
@@ -97,8 +99,31 @@
                 <div id="valor-calculado-display" style="margin-bottom: 15px; font-weight: bold; color: var(--primary-color);">
                     Valor Total: R$ 0,00
                 </div>
-                <button onclick="processarTransacao()" class="btn-primary">Confirmar e Adicionar Saldo</button>
-                <p id="admin-status"></p>
+                <button onclick="processarTransacao('lancar')" class="btn-primary">Confirmar e Adicionar Cashback</button>
+                <p id="admin-status-lancar"></p>
+            </main>
+        </section>
+
+        <!-- Seção: Resgate -->
+        <section id="section-resgate" class="admin-section">
+            <main class="admin-card" style="border: 2px solid #e67e22;">
+                <h2 style="color: #e67e22;">💰 Resgatar Saldo do Cliente</h2>
+                <p style="font-size: 0.9rem; margin-bottom: 20px; color: #bbb;">Use esta seção quando o cliente quiser pagar o abastecimento com o saldo dele.</p>
+                
+                <div id="reader-container-resgate" class="scanner-container" style="margin-bottom: 20px; display: none;">
+                    <div id="reader-resgate" style="width: 100%; border-radius: 10px; overflow: hidden;"></div>
+                    <button onclick="stopScanner('resgate')" class="btn-logout" style="margin-top: 10px;">Fechar Câmera</button>
+                </div>
+
+                <button id="start-scan-btn-resgate" onclick="startScanner('resgate')" class="btn-primary" style="margin-bottom: 20px; background: #e67e22; color: white;">📷 Escanear QR de Resgate</button>
+
+                <div class="form-group">
+                    <label for="transaction-token-resgate">Código de Resgate (8 dígitos):</label>
+                    <input type="text" id="transaction-token-resgate" placeholder="Digite o código ou escaneie o QR" maxlength="8" style="text-transform: uppercase; font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 2px; border-color: #e67e22;">
+                </div>
+
+                <button onclick="processarTransacao('resgate')" class="btn-primary" style="background: #e67e22; color: white;">Confirmar Uso de Saldo</button>
+                <p id="admin-status-resgate"></p>
             </main>
         </section>
 
@@ -462,13 +487,16 @@
             }
         }
 
-        function processarTransacao() {
-            const token = document.getElementById('transaction-token').value.trim().toUpperCase();
+        function processarTransacao(modo = 'lancar') {
+            const tokenInputId = modo === 'lancar' ? 'transaction-token-lancar' : 'transaction-token-resgate';
+            const statusId = modo === 'lancar' ? 'admin-status-lancar' : 'admin-status-resgate';
+            
+            const token = document.getElementById(tokenInputId).value.trim().toUpperCase();
             const qtd = parseInt(document.getElementById('qtd-produtos').value);
-            const status = document.getElementById('admin-status');
+            const status = document.getElementById(statusId);
 
             if (!token) {
-                alert("Escaneie ou cole o token do cliente!");
+                alert("Escaneie ou digite o código do cliente!");
                 return;
             }
 
@@ -479,15 +507,24 @@
             db.runTransaction((transaction) => {
                 return transaction.get(transacaoRef).then((tDoc) => {
                     if (!tDoc.exists) {
-                        throw "Token inválido!";
+                        throw "Código inválido!";
                     }
 
                     const tData = tDoc.data();
                     if (tData.usado) {
-                        throw "Este QR Code já foi utilizado!";
+                        throw "Este código já foi utilizado!";
                     }
 
                     const tipo = tData.tipo || 'ganho';
+                    
+                    // Validação de segurança: garantir que o admin está na aba certa para o tipo de QR
+                    if (modo === 'lancar' && tipo === 'resgate') {
+                        throw "Este é um QR de RESGATE. Use a aba 'Resgatar Saldo'!";
+                    }
+                    if (modo === 'resgate' && tipo === 'ganho') {
+                        throw "Este é um QR de GANHO. Use a aba 'Dar Cashback'!";
+                    }
+
                     let valorFinal = 0;
                     let produtosStr = "";
 
@@ -551,10 +588,24 @@
                 });
             }).then((result) => {
                 const acao = result.tipo === 'resgate' ? "utilizados" : "adicionados";
+                status.style.color = result.tipo === 'resgate' ? "#e67e22" : "var(--success-color)";
                 status.innerText = `Sucesso! R$ ${result.valor.toFixed(2)} ${acao}.`;
-                document.getElementById('transaction-token').value = "";
-                document.getElementById('qtd-produtos').value = 1;
+                
+                document.getElementById(tokenInputId).value = "";
+                if (modo === 'lancar') {
+                    document.getElementById('qtd-produtos').value = 1;
+                    produtosSelecionados.clear();
+                    gradeProdutos.forEach(p => {
+                        const div = document.getElementById(`select-prod-${p.id}`);
+                        if (div) {
+                            div.style.background = "#444";
+                            div.style.border = "none";
+                        }
+                    });
+                    atualizarValorCalculado();
+                }
             }).catch((err) => {
+                status.style.color = "var(--error-color)";
                 status.innerText = "Erro: " + err;
                 console.error(err);
             });
@@ -568,33 +619,42 @@
 
         let html5QrCode = null;
 
-        function startScanner() {
-            document.getElementById('reader-container').style.display = 'block';
-            document.getElementById('start-scan-btn').style.display = 'none';
+        function startScanner(modo = 'lancar') {
+            const containerId = modo === 'lancar' ? 'reader-container-lancar' : 'reader-container-resgate';
+            const readerId = modo === 'lancar' ? 'reader-lancar' : 'reader-resgate';
+            const btnId = modo === 'lancar' ? 'start-scan-btn-lancar' : 'start-scan-btn-resgate';
 
-            html5QrCode = new Html5Qrcode("reader");
+            document.getElementById(containerId).style.display = 'block';
+            document.getElementById(btnId).style.display = 'none';
+
+            html5QrCode = new Html5Qrcode(readerId);
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                // Sucesso no Scan
-                document.getElementById('transaction-token').value = decodedText;
-                stopScanner();
-                // Opcional: processar automaticamente após scan
-                // processarTransacao();
+                const tokenInputId = modo === 'lancar' ? 'transaction-token-lancar' : 'transaction-token-resgate';
+                document.getElementById(tokenInputId).value = decodedText;
+                stopScanner(modo);
+                // Opcional: processar automaticamente ao escanear
+                // processarTransacao(modo);
             }).catch((err) => {
-                console.error("Erro ao iniciar câmera:", err);
+                console.error("Erro ao iniciar scanner", err);
+                alert("Erro ao abrir a câmera. Verifique as permissões.");
+                stopScanner(modo);
             });
         }
 
-        function stopScanner() {
+        function stopScanner(modo = 'lancar') {
+            const containerId = modo === 'lancar' ? 'reader-container-lancar' : 'reader-container-resgate';
+            const btnId = modo === 'lancar' ? 'start-scan-btn-lancar' : 'start-scan-btn-resgate';
+
             if (html5QrCode) {
                 html5QrCode.stop().then(() => {
-                    document.getElementById('reader-container').style.display = 'none';
-                    document.getElementById('start-scan-btn').style.display = 'block';
+                    document.getElementById(containerId).style.display = 'none';
+                    document.getElementById(btnId).style.display = 'block';
                 }).catch((err) => console.error("Erro ao parar scanner", err));
             } else {
-                document.getElementById('reader-container').style.display = 'none';
-                document.getElementById('start-scan-btn').style.display = 'block';
+                document.getElementById(containerId).style.display = 'none';
+                document.getElementById(btnId).style.display = 'block';
             }
         }
 
