@@ -1,11 +1,11 @@
 // Configuração do Firebase (Substitua pelos seus dados do console do Firebase)
 const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJETO.firebaseapp.com",
-    projectId: "SEU_PROJETO",
-    storageBucket: "SEU_PROJETO.appspot.com",
-    messagingSenderId: "SEU_SENDER_ID",
-    appId: "SEU_APP_ID"
+    apiKey: "AIzaSyCKbZxd2VptTcVtmsNwiICFSJhNTeMJtpc",
+    authDomain: "money-postos.firebaseapp.com",
+    projectId: "money-postos",
+    storageBucket: "money-postos.firebasestorage.app",
+    messagingSenderId: "792630576163",
+    appId: "1:792630576163:web:8048bbffaf2cc289b0dd96"
 };
 
 // Inicializar Firebase
