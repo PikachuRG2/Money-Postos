@@ -141,6 +141,15 @@
         let unsubscribeTransaction = null;
         let qrcode = null;
 
+        function generate8DigitToken() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let token = '';
+            for (let i = 0; i < 8; i++) {
+                token += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return token;
+        }
+
         function gerarNovoToken(tipo = 'ganho') {
             const user = auth.currentUser;
             if (!user) return;
@@ -171,16 +180,18 @@
             qrPlaceholder.innerHTML = "Gerando...";
             document.getElementById('transaction-id-display').innerText = "";
 
-            // Criar uma nova transação pendente
-            db.collection("transacoes").add({
+            const token = generate8DigitToken();
+
+            // Criar uma nova transação pendente com ID personalizado de 8 dígitos
+            db.collection("transacoes").doc(token).set({
                 userId: user.uid,
                 status: 'pendente',
                 usado: false,
                 tipo: tipo,
                 valor: valor,
                 dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
-            }).then((docRef) => {
-                currentTransactionId = docRef.id;
+            }).then(() => {
+                currentTransactionId = token;
                 
                 // Gerar QR Code Real
                 qrPlaceholder.innerHTML = "";

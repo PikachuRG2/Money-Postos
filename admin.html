@@ -74,21 +74,22 @@
                 <button id="start-scan-btn" onclick="startScanner()" class="btn-primary" style="margin-bottom: 20px; background: #2980b9; color: white;">📷 Escanear QR Code</button>
 
                 <div class="form-group">
-                    <label>Selecione os Produtos:</label>
+                    <label for="transaction-token">Código da Transação (8 dígitos):</label>
+                    <input type="text" id="transaction-token" placeholder="Digite o código ou escaneie o QR" maxlength="8" style="text-transform: uppercase; font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 2px;">
+                </div>
+                <div class="form-group" id="qtd-group">
+                    <label for="qtd-produtos">Quantidade (Global):</label>
+                    <input type="number" id="qtd-produtos" value="1" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Selecione os Produtos (Apenas para GANHO):</label>
                     <div id="products-selection-list" class="products-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                         <!-- Preenchido via JS -->
                         <p>Carregando produtos...</p>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="transaction-token">Token da Transação:</label>
-                    <input type="text" id="transaction-token" placeholder="O token aparecerá aqui após o scan">
-                </div>
-                <div class="form-group" id="qtd-group">
-                    <label for="qtd-produtos">Quantidade (Global):</label>
-                    <input type="number" id="qtd-produtos" value="1" min="1">
-                </div>
                 <div id="valor-calculado-display" style="margin-bottom: 15px; font-weight: bold; color: var(--primary-color);">
                     Valor Total: R$ 0,00
                 </div>
