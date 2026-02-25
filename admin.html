@@ -42,12 +42,16 @@
         <section id="section-dashboard" class="admin-section active">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h4>Total Cashback</h4>
-                    <p id="stat-total-cashback">R$ 0,00</p>
+                    <h4>Saldo Distribuído</h4>
+                    <p id="stat-total-distribuido" style="color: var(--success-color);">R$ 0,00</p>
                 </div>
                 <div class="stat-card">
-                    <h4>Transações</h4>
-                    <p id="stat-total-transacoes">0</p>
+                    <h4>Total Resgatado</h4>
+                    <p id="stat-total-resgatado" style="color: #e67e22;">R$ 0,00</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Saldo em Aberto</h4>
+                    <p id="stat-total-aberto" style="color: var(--primary-color);">R$ 0,00</p>
                 </div>
                 <div class="stat-card">
                     <h4>Clientes</h4>
@@ -151,7 +155,14 @@
 
         <!-- Seção: Histórico -->
         <section id="section-historico" class="admin-section">
-            <h2>Histórico de Transações</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Histórico de Transações</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="filtrarHistorico('hoje')" class="btn-secondary" style="width: auto; font-size: 0.8rem; padding: 5px 15px;">Hoje</button>
+                    <button onclick="filtrarHistorico('mes')" class="btn-secondary" style="width: auto; font-size: 0.8rem; padding: 5px 15px;">Mês</button>
+                    <button onclick="filtrarHistorico('tudo')" class="btn-secondary" style="width: auto; font-size: 0.8rem; padding: 5px 15px;">Tudo</button>
+                </div>
+            </div>
             <div style="overflow-x: auto;">
                 <table class="data-table">
                     <thead>
@@ -207,23 +218,24 @@
         }
 
         function loadDashboardStats() {
-            // Total Cashback e Transações
+            // Total Cashback, Resgatado e Transações
             db.collection("transacoes").where("status", "==", "concluido")
                 .onSnapshot((snapshot) => {
-                    let totalCashback = 0;
-                    let totalTransacoes = snapshot.size;
+                    let totalDistribuido = 0;
+                    let totalResgatado = 0;
                     
                     snapshot.forEach(doc => {
                         const t = doc.data();
                         if (t.tipo === 'resgate') {
-                            totalCashback -= t.valor || 0;
+                            totalResgatado += t.valor || 0;
                         } else {
-                            totalCashback += t.valor || 0;
+                            totalDistribuido += t.valor || 0;
                         }
                     });
 
-                    document.getElementById('stat-total-cashback').innerText = "R$ " + totalCashback.toFixed(2).replace('.', ',');
-                    document.getElementById('stat-total-transacoes').innerText = totalTransacoes;
+                    document.getElementById('stat-total-distribuido').innerText = "R$ " + totalDistribuido.toFixed(2).replace('.', ',');
+                    document.getElementById('stat-total-resgatado').innerText = "R$ " + totalResgatado.toFixed(2).replace('.', ',');
+                    document.getElementById('stat-total-aberto').innerText = "R$ " + (totalDistribuido - totalResgatado).toFixed(2).replace('.', ',');
                 });
 
             // Total Clientes
@@ -263,18 +275,34 @@
                     snapshot.forEach(doc => {
                         const u = doc.data();
                         const tr = document.createElement('tr');
+                        const isBlocked = u.status === 'bloqueado';
+                        tr.style.opacity = isBlocked ? '0.5' : '1';
+                        
                         tr.innerHTML = `
-                            <td>${u.nome}</td>
+                            <td>${u.nome} ${isBlocked ? '🚫' : ''}</td>
                             <td>${u.email}</td>
                             <td>R$ ${u.saldo.toFixed(2)}</td>
                             <td><span class="role-badge role-${u.role}">${u.role}</span></td>
-                            <td>
-                                <button onclick="toggleUserRole('${doc.id}', '${u.role}')" style="width: auto; padding: 5px 10px; font-size: 0.7rem;">Alterar Role</button>
+                            <td style="display: flex; gap: 5px;">
+                                <button onclick="toggleUserRole('${doc.id}', '${u.role}')" class="btn-secondary" style="width: auto; padding: 5px 10px; font-size: 0.7rem;">Role</button>
+                                <button onclick="toggleUserStatus('${doc.id}', '${u.status || 'ativo'}')" class="${isBlocked ? 'btn-primary' : 'btn-logout'}" style="width: auto; padding: 5px 10px; font-size: 0.7rem; background: ${isBlocked ? '#2ecc71' : '#e74c3c'}">
+                                    ${isBlocked ? 'Desbloquear' : 'Bloquear'}
+                                </button>
                             </td>
                         `;
                         tbody.appendChild(tr);
                     });
                 });
+        }
+
+        function toggleUserStatus(userId, currentStatus) {
+            const newStatus = currentStatus === 'bloqueado' ? 'ativo' : 'bloqueado';
+            const acao = newStatus === 'bloqueado' ? 'BLOQUEAR' : 'DESBLOQUEAR';
+            if (confirm(`Deseja realmente ${acao} este cliente?`)) {
+                db.collection("usuarios").doc(userId).update({ status: newStatus })
+                    .then(() => alert(`Usuário ${newStatus} com sucesso!`))
+                    .catch(err => alert("Erro: " + err));
+            }
         }
 
         function toggleUserRole(userId, currentRole) {
@@ -286,30 +314,50 @@
             }
         }
 
-        function loadHistoryList() {
-            db.collection("transacoes").orderBy("dataCriacao", "desc").limit(20)
-                .onSnapshot((snapshot) => {
-                    const tbody = document.getElementById('history-table-body');
-                    tbody.innerHTML = "";
-                    snapshot.forEach(doc => {
-                        const t = doc.data();
-                        const data = t.dataCriacao ? t.dataCriacao.toDate().toLocaleString('pt-BR') : '...';
-                        const valorStr = t.valor ? t.valor.toFixed(2) : '-';
-                        const tipo = t.tipo || 'ganho';
-                        const cor = tipo === 'resgate' ? 'color: var(--error-color);' : 'color: var(--success-color);';
-                        const sinal = tipo === 'resgate' ? '-' : '+';
+        function loadHistoryList(periodo = 'tudo') {
+            let query = db.collection("transacoes").orderBy("dataCriacao", "desc");
+            
+            if (periodo === 'hoje') {
+                const hoje = new Date();
+                hoje.setHours(0,0,0,0);
+                query = query.where("dataCriacao", ">=", hoje);
+            } else if (periodo === 'mes') {
+                const mes = new Date();
+                mes.setDate(1);
+                mes.setHours(0,0,0,0);
+                query = query.where("dataCriacao", ">=", mes);
+            }
 
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${data}</td>
-                            <td>${t.userId.substring(0, 8)}... (${tipo})</td>
-                            <td>${t.produtosStr || t.quantidadeProdutos || '-'}</td>
-                            <td style="${cor}">${sinal} R$ ${valorStr}</td>
-                            <td>${t.status}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+            query.limit(50).onSnapshot((snapshot) => {
+                const tbody = document.getElementById('history-table-body');
+                tbody.innerHTML = "";
+                if (snapshot.empty) {
+                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>Nenhuma transação encontrada para este período.</td></tr>";
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    const data = t.dataCriacao ? t.dataCriacao.toDate().toLocaleString('pt-BR') : '...';
+                    const valorStr = t.valor ? t.valor.toFixed(2) : '-';
+                    const tipo = t.tipo || 'ganho';
+                    const cor = tipo === 'resgate' ? 'color: var(--error-color);' : 'color: var(--success-color);';
+                    const sinal = tipo === 'resgate' ? '-' : '+';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${data}</td>
+                        <td>${t.userId.substring(0, 8)}... (${tipo})</td>
+                        <td>${t.produtosStr || t.quantidadeProdutos || '-'}</td>
+                        <td style="${cor}">${sinal} R$ ${valorStr}</td>
+                        <td>${t.status}</td>
+                    `;
+                    tbody.appendChild(tr);
                 });
+            });
+        }
+
+        function filtrarHistorico(periodo) {
+            loadHistoryList(periodo);
         }
 
         let gradeProdutos = [];
@@ -415,7 +463,7 @@
         }
 
         function processarTransacao() {
-            const token = document.getElementById('transaction-token').value.trim();
+            const token = document.getElementById('transaction-token').value.trim().toUpperCase();
             const qtd = parseInt(document.getElementById('qtd-produtos').value);
             const status = document.getElementById('admin-status');
 

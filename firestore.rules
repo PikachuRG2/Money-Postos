@@ -18,14 +18,20 @@ service cloud.firestore {
         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Função para verificar se o usuário está bloqueado
+    function isNotBlocked() {
+      return !exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) || 
+             get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.status != 'bloqueado';
+    }
+
     // Regras para a coleção de usuários
     match /usuarios/{userId} {
-      allow read, write: if isSignedIn(); // Para teste inicial, vamos permitir qualquer logado
+      allow read, write: if isSignedIn() && (isAdmin() || isNotBlocked());
     }
 
     // Regras para a coleção de transações
     match /transacoes/{transacaoId} {
-      allow read, write: if isSignedIn(); // Para teste inicial
+      allow read, write: if isSignedIn() && (isAdmin() || isNotBlocked());
     }
 
     // Regras para a coleção de produtos
