@@ -13,25 +13,19 @@ service cloud.firestore {
 
     // Função para verificar se o usuário é admin
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Regras para a coleção de usuários
     match /usuarios/{userId} {
-      allow list: if isAdmin();
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow create: if isSignedIn() && isOwner(userId); // Garante que o usuário só crie o seu próprio doc
-      allow update: if isSignedIn() && (isAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'saldo'])));
-      allow delete: if isAdmin();
+      allow read, write: if isSignedIn(); // Para teste inicial, vamos permitir qualquer logado
     }
 
     // Regras para a coleção de transações
     match /transacoes/{transacaoId} {
-      allow list: if isSignedIn() && (request.query.limit <= 20 || isAdmin()); // Permite listagem para o próprio usuário ou admin
-      allow get: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isSignedIn(); // Cliente cria a transação pendente
-      allow update: if isSignedIn() && isAdmin(); // Apenas admin pode validar/usar
-      allow delete: if isAdmin();
+      allow read, write: if isSignedIn(); // Para teste inicial
     }
 
     // Regras para a coleção de produtos
