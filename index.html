@@ -30,6 +30,7 @@
             <div id="signup-form" style="display: none;">
                 <h2>Cadastro</h2>
                 <input type="text" id="signup-name" placeholder="Nome Completo">
+                <input type="text" id="signup-cpf" placeholder="CPF (apenas números)" maxlength="11">
                 <input type="email" id="signup-email" placeholder="E-mail">
                 <input type="password" id="signup-password" placeholder="Senha">
                 <button onclick="signup()">Cadastrar</button>
@@ -58,7 +59,16 @@
             
             auth.signInWithEmailAndPassword(email, pass)
                 .then((userCredential) => {
-                    window.location.href = "dashboard.html";
+                    const user = userCredential.user;
+                    // Buscar a role do usuário para saber para onde redirecionar
+                    return db.collection("usuarios").doc(user.uid).get();
+                })
+                .then((doc) => {
+                    if (doc.exists && doc.data().role === 'admin') {
+                        window.location.href = "admin.html";
+                    } else {
+                        window.location.href = "dashboard.html";
+                    }
                 })
                 .catch((error) => {
                     alert("Erro ao entrar: " + error.message);
@@ -67,8 +77,14 @@
 
         function signup() {
             const name = document.getElementById('signup-name').value;
+            const cpf = document.getElementById('signup-cpf').value;
             const email = document.getElementById('signup-email').value;
             const pass = document.getElementById('signup-password').value;
+
+            if (cpf.length !== 11) {
+                alert("Por favor, insira um CPF válido com 11 dígitos.");
+                return;
+            }
 
             auth.createUserWithEmailAndPassword(email, pass)
                 .then((userCredential) => {
@@ -76,6 +92,7 @@
                     // Salvar dados extras no Firestore
                     return db.collection("usuarios").doc(user.uid).set({
                         nome: name,
+                        cpf: cpf,
                         email: email,
                         saldo: 0,
                         role: 'cliente',
@@ -90,10 +107,16 @@
                 });
         }
 
-        // Verificar se já está logado
+        // Verificar se já está logado e redirecionar
         auth.onAuthStateChanged((user) => {
             if (user) {
-                window.location.href = "dashboard.html";
+                db.collection("usuarios").doc(user.uid).get().then((doc) => {
+                    if (doc.exists && doc.data().role === 'admin') {
+                        window.location.href = "admin.html";
+                    } else {
+                        window.location.href = "dashboard.html";
+                    }
+                });
             }
         });
     </script>

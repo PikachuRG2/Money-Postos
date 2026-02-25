@@ -178,7 +178,107 @@ a {
     font-weight: bold;
 }
 
-/* Admin Specific */
+/* Admin Specific Improvements */
+.admin-container {
+    max-width: 900px;
+    width: 100%;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.admin-nav button {
+    width: auto;
+    background: #333;
+    color: #bbb;
+    padding: 8px 20px;
+    white-space: nowrap;
+}
+
+.admin-nav button.active {
+    background: var(--primary-color);
+    color: #000;
+}
+
+.admin-section {
+    display: none;
+}
+
+.admin-section.active {
+    display: block;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: #333;
+    padding: 20px;
+    border-radius: 12px;
+    border-bottom: 4px solid var(--primary-color);
+    text-align: center;
+}
+
+.stat-card h4 {
+    font-size: 0.8rem;
+    color: #bbb;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.stat-card p {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #333;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+
+.data-table th {
+    background: #444;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.data-table td {
+    font-size: 0.85rem;
+}
+
+.role-badge {
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.role-admin { background: #e74c3c; color: white; }
+.role-cliente { background: #3498db; color: white; }
+
+/* Existing Admin Styles */
 .form-group {
     text-align: left;
     margin-bottom: 15px;

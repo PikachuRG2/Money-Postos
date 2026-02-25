@@ -10,6 +10,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -30,9 +32,23 @@
             <div class="actions">
                 <p>Apresente seu QR Code no posto para ganhar cashback!</p>
                 <!-- Simulação de QR Code -->
-                <div id="qrcode-placeholder">
-                    [ QR CODE ]
-                    <p id="user-id-display"></p>
+                <div id="qrcode-container">
+                    <div id="qrcode-placeholder">
+                        [ GERANDO QR... ]
+                    </div>
+                    <p id="transaction-id-display"></p>
+                </div>
+                
+                <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button onclick="gerarNovoToken('ganho')" class="btn-secondary" style="width: auto; padding: 10px 20px;">⚡ Ganhar Cashback</button>
+                    
+                    <div class="resgate-container" style="display: flex; flex-direction: column; align-items: center; background: #333; padding: 15px; border-radius: 10px; border: 1px solid #444; width: 100%; margin-top: 10px;">
+                        <label style="font-size: 0.8rem; margin-bottom: 5px; color: var(--primary-color);">Valor para utilizar:</label>
+                        <div style="display: flex; gap: 10px; width: 100%;">
+                            <input type="number" id="valor-resgate" placeholder="R$ 0,00" step="0.01" min="0.01" style="margin-bottom: 0; flex: 1;">
+                            <button onclick="gerarNovoToken('resgate')" class="btn-primary" style="width: auto; padding: 10px 15px; background: #e67e22; color: white;">Utilizar Saldo</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -49,20 +65,30 @@
     <script>
         auth.onAuthStateChanged((user) => {
             if (user) {
+                // Verificar se o usuário é admin e redirecionar se necessário
+                db.collection("usuarios").doc(user.uid).get().then((doc) => {
+                    if (doc.exists && doc.data().role === 'admin') {
+                        window.location.href = "admin.html";
+                        return;
+                    }
+                });
+
                 // Buscar dados do usuário em tempo real
                 db.collection("usuarios").doc(user.uid).onSnapshot((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
                         document.getElementById('user-name').innerText = data.nome;
                         document.getElementById('user-balance').innerText = data.saldo.toFixed(2).replace('.', ',');
-                        document.getElementById('user-id-display').innerText = "ID: " + user.uid;
                     }
                 });
+
+                // Gerar token de transação inicial (ganho por padrão)
+                gerarNovoToken('ganho');
 
                 // Buscar histórico de transações em tempo real
                 db.collection("transacoes")
                     .where("userId", "==", user.uid)
-                    .orderBy("data", "desc")
+                    .orderBy("dataCriacao", "desc")
                     .limit(5)
                     .onSnapshot((snapshot) => {
                         const list = document.getElementById('transaction-list');
@@ -74,12 +100,18 @@
                         list.innerHTML = "";
                         snapshot.forEach((doc) => {
                             const t = doc.data();
-                            const data = t.data ? t.data.toDate().toLocaleDateString('pt-BR') : 'Recent...';
+                            if (t.status !== 'concluido') return; // Só mostrar concluídas no histórico simplificado
+
+                            const data = t.dataFinalizacao ? t.dataFinalizacao.toDate().toLocaleDateString('pt-BR') : 'Recent...';
+                            const valorStr = t.valor ? t.valor.toFixed(2).replace('.', ',') : '0,00';
+                            const sinal = t.tipo === 'resgate' ? '-' : '+';
+                            const cor = t.tipo === 'resgate' ? 'color: var(--error-color);' : 'color: var(--success-color);';
+
                             const div = document.createElement('div');
                             div.className = 'transaction-item';
                             div.innerHTML = `
-                                <span>${data}</span>
-                                <span class="trans-val">+ R$ ${t.valor.toFixed(2).replace('.', ',')}</span>
+                                <span>${data} (${t.tipo || 'ganho'})</span>
+                                <span class="trans-val" style="${cor}">${sinal} R$ ${valorStr}</span>
                             `;
                             list.appendChild(div);
                         });
@@ -92,6 +124,87 @@
         function logout() {
             auth.signOut().then(() => {
                 window.location.href = "index.html";
+            });
+        }
+
+        let currentTransactionId = null;
+        let unsubscribeTransaction = null;
+        let qrcode = null;
+
+        function gerarNovoToken(tipo = 'ganho') {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            let valor = 0.50; // Valor padrão para ganho
+            
+            if (tipo === 'resgate') {
+                const valorInput = document.getElementById('valor-resgate').value;
+                valor = parseFloat(valorInput);
+                
+                if (isNaN(valor) || valor <= 0) {
+                    alert("Informe um valor válido para utilizar!");
+                    return;
+                }
+
+                // Verificar saldo antes de gerar o token
+                const saldoAtual = parseFloat(document.getElementById('user-balance').innerText.replace(',', '.'));
+                if (valor > saldoAtual) {
+                    alert("Saldo insuficiente para este valor!");
+                    return;
+                }
+            }
+
+            // Limpar monitoramento anterior se houver
+            if (unsubscribeTransaction) unsubscribeTransaction();
+            
+            const qrPlaceholder = document.getElementById('qrcode-placeholder');
+            qrPlaceholder.innerHTML = "Gerando...";
+            document.getElementById('transaction-id-display').innerText = "";
+
+            // Criar uma nova transação pendente
+            db.collection("transacoes").add({
+                userId: user.uid,
+                status: 'pendente',
+                usado: false,
+                tipo: tipo,
+                valor: valor,
+                dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
+            }).then((docRef) => {
+                currentTransactionId = docRef.id;
+                
+                // Gerar QR Code Real
+                qrPlaceholder.innerHTML = "";
+                if (qrcode) {
+                    qrcode.clear();
+                    qrcode.makeCode(currentTransactionId);
+                } else {
+                    qrcode = new QRCode(qrPlaceholder, {
+                        text: currentTransactionId,
+                        width: 180,
+                        height: 180,
+                        colorDark : tipo === 'resgate' ? "#e67e22" : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                }
+                
+                document.getElementById('transaction-id-display').innerText = `TOKEN (${tipo.toUpperCase()}): ${currentTransactionId}`;
+                if (tipo === 'resgate') {
+                    document.getElementById('transaction-id-display').innerText += ` | VALOR: R$ ${valor.toFixed(2)}`;
+                }
+
+                // Monitorar se a transação foi processada pelo admin
+                unsubscribeTransaction = db.collection("transacoes").doc(currentTransactionId)
+                    .onSnapshot((doc) => {
+                        if (doc.exists && doc.data().status === 'concluido') {
+                            alert(tipo === 'resgate' ? "Saldo utilizado com sucesso!" : "Cashback recebido com sucesso!");
+                            if (tipo === 'resgate') document.getElementById('valor-resgate').value = "";
+                            gerarNovoToken('ganho'); // Volta para o padrão
+                        }
+                    });
+            }).catch(err => {
+                console.error("Erro ao gerar token:", err);
+                qrPlaceholder.innerText = "Erro ao gerar QR";
             });
         }
     </script>

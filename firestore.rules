@@ -27,9 +27,15 @@ service cloud.firestore {
     // Regras para a coleção de transações
     match /transacoes/{transacaoId} {
       allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isSignedIn() && isAdmin(); // Apenas admin cria transações
-      allow update: if false; // Transações não devem ser editadas
+      allow create: if isSignedIn(); // Cliente cria a transação pendente
+      allow update: if isSignedIn() && isAdmin(); // Apenas admin pode validar/usar
       allow delete: if isAdmin();
+    }
+
+    // Regras para a coleção de produtos
+    match /produtos/{produtoId} {
+      allow read: if isSignedIn(); // Qualquer logado pode ver a grade
+      allow write: if isSignedIn() && isAdmin(); // Apenas admin gerencia grade
     }
   }
 }

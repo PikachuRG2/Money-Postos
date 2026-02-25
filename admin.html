@@ -10,27 +10,154 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
-    <div class="container">
+    <div class="container admin-container">
         <header>
             <h1>Painel Admin</h1>
             <button onclick="logout()" class="btn-logout">Sair</button>
         </header>
 
-        <main class="admin-card">
-            <h2>Lançar Cashback</h2>
-            <div class="form-group">
-                <label for="user-id">ID do Cliente (ou escaneie):</label>
-                <input type="text" id="user-id" placeholder="Ex: abc123xyz">
+        <nav class="admin-nav">
+            <button onclick="showSection('dashboard')" id="nav-dashboard" class="active">📊 Dashboard</button>
+            <button onclick="showSection('lancar')" id="nav-lancar">⚡ Lançar Cashback</button>
+            <button onclick="showSection('produtos')" id="nav-produtos">📦 Produtos</button>
+            <button onclick="showSection('usuarios')" id="nav-usuarios">👥 Usuários</button>
+            <button onclick="showSection('historico')" id="nav-historico">📜 Histórico</button>
+        </nav>
+
+        <!-- Seção: Dashboard -->
+        <section id="section-dashboard" class="admin-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Cashback</h4>
+                    <p id="stat-total-cashback">R$ 0,00</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Transações</h4>
+                    <p id="stat-total-transacoes">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Clientes</h4>
+                    <p id="stat-total-clientes">0</p>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="qtd-produtos">Quantidade de Produtos:</label>
-                <input type="number" id="qtd-produtos" value="1" min="1">
+            <h3>Atividade Recente</h3>
+            <div id="recent-activity">
+                <!-- Preenchido via JS -->
+                <p>Carregando atividade...</p>
             </div>
-            <button onclick="adicionarSaldo()" class="btn-primary">Adicionar R$ 0,50 por produto</button>
-            <p id="admin-status"></p>
-        </main>
+        </section>
+
+        <!-- Seção: Lançar -->
+        <section id="section-lancar" class="admin-section">
+            <main class="admin-card">
+                <h2>Lançar Cashback</h2>
+                
+                <div id="reader-container" style="margin-bottom: 20px; display: none;">
+                    <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden;"></div>
+                    <button onclick="stopScanner()" class="btn-logout" style="margin-top: 10px;">Fechar Câmera</button>
+                </div>
+
+                <button id="start-scan-btn" onclick="startScanner()" class="btn-primary" style="margin-bottom: 20px; background: #2980b9; color: white;">📷 Escanear QR Code</button>
+
+                <div class="form-group">
+                    <label>Selecione os Produtos:</label>
+                    <div id="products-selection-list" class="products-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <!-- Preenchido via JS -->
+                        <p>Carregando produtos...</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="transaction-token">Token da Transação:</label>
+                    <input type="text" id="transaction-token" placeholder="O token aparecerá aqui após o scan">
+                </div>
+                <div class="form-group" id="qtd-group">
+                    <label for="qtd-produtos">Quantidade (Global):</label>
+                    <input type="number" id="qtd-produtos" value="1" min="1">
+                </div>
+                <div id="valor-calculado-display" style="margin-bottom: 15px; font-weight: bold; color: var(--primary-color);">
+                    Valor Total: R$ 0,00
+                </div>
+                <button onclick="processarTransacao()" class="btn-primary">Confirmar e Adicionar Saldo</button>
+                <p id="admin-status"></p>
+            </main>
+        </section>
+
+        <!-- Seção: Produtos -->
+        <section id="section-produtos" class="admin-section">
+            <h2>Gerenciar Grade de Produtos</h2>
+            <div class="admin-card" style="margin-bottom: 20px;">
+                <h3>Novo Produto</h3>
+                <div class="form-group">
+                    <input type="text" id="new-product-name" placeholder="Nome do Produto (Ex: Gasolina Aditivada)">
+                </div>
+                <div class="form-group">
+                    <input type="number" id="new-product-cashback" placeholder="Cashback por Unidade (Ex: 0.50)" step="0.01">
+                </div>
+                <button onclick="adicionarProduto()" class="btn-primary">Adicionar Produto</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Cashback/Un</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table-body">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Seção: Usuários -->
+        <section id="section-usuarios" class="admin-section">
+            <h2>Gerenciar Usuários</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Saldo</th>
+                            <th>Role</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Seção: Histórico -->
+        <section id="section-historico" class="admin-section">
+            <h2>Histórico de Transações</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Produtos</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
     <script src="firebase-config.js"></script>
@@ -40,59 +167,333 @@
                 // Verificar se é admin
                 db.collection("usuarios").doc(user.uid).get().then((doc) => {
                     if (!doc.exists || doc.data().role !== 'admin') {
-                        // alert("Acesso restrito a administradores.");
-                        // window.location.href = "dashboard.html";
-                        // Para fins de teste inicial, permitiremos se não houver role definida ou se for admin
-                        console.log("Verificação de admin ignorada para facilitar testes iniciais.");
+                        alert("Acesso restrito a administradores.");
+                        window.location.href = "dashboard.html";
+                    } else {
+                        // Iniciar carregamento de dados do painel
+                        loadDashboardStats();
+                        loadUsersList();
+                        loadHistoryList();
+                        loadProductsList();
                     }
+                }).catch((error) => {
+                    console.error("Erro ao verificar admin:", error);
+                    window.location.href = "index.html";
                 });
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        function adicionarSaldo() {
-            const userId = document.getElementById('user-id').value;
+        function showSection(sectionId) {
+            // Esconder todas as seções
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('active'));
+
+            // Mostrar a selecionada
+            document.getElementById('section-' + sectionId).classList.add('active');
+            document.getElementById('nav-' + sectionId).classList.add('active');
+        }
+
+        function loadDashboardStats() {
+            // Total Cashback e Transações
+            db.collection("transacoes").where("status", "==", "concluido")
+                .onSnapshot((snapshot) => {
+                    let totalCashback = 0;
+                    let totalTransacoes = snapshot.size;
+                    
+                    snapshot.forEach(doc => {
+                        const t = doc.data();
+                        if (t.tipo === 'resgate') {
+                            totalCashback -= t.valor || 0;
+                        } else {
+                            totalCashback += t.valor || 0;
+                        }
+                    });
+
+                    document.getElementById('stat-total-cashback').innerText = "R$ " + totalCashback.toFixed(2).replace('.', ',');
+                    document.getElementById('stat-total-transacoes').innerText = totalTransacoes;
+                });
+
+            // Total Clientes
+            db.collection("usuarios").where("role", "==", "cliente")
+                .onSnapshot((snapshot) => {
+                    document.getElementById('stat-total-clientes').innerText = snapshot.size;
+                });
+
+            // Atividade Recente
+            db.collection("transacoes").orderBy("dataFinalizacao", "desc").limit(5)
+                .onSnapshot((snapshot) => {
+                    const activityDiv = document.getElementById('recent-activity');
+                    if (snapshot.empty) {
+                        activityDiv.innerHTML = "<p>Nenhuma atividade recente.</p>";
+                        return;
+                    }
+
+                    activityDiv.innerHTML = "";
+                    snapshot.forEach(doc => {
+                        const t = doc.data();
+                        const item = document.createElement('div');
+                        item.className = 'transaction-item';
+                        item.innerHTML = `
+                            <span>${t.status === 'concluido' ? '✅' : '⏳'} Transação ${doc.id.substring(0, 6)}...</span>
+                            <span>${t.valor ? 'R$ ' + t.valor.toFixed(2) : '-'}</span>
+                        `;
+                        activityDiv.appendChild(item);
+                    });
+                });
+        }
+
+        function loadUsersList() {
+            db.collection("usuarios").orderBy("nome")
+                .onSnapshot((snapshot) => {
+                    const tbody = document.getElementById('users-table-body');
+                    tbody.innerHTML = "";
+                    snapshot.forEach(doc => {
+                        const u = doc.data();
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${u.nome}</td>
+                            <td>${u.email}</td>
+                            <td>R$ ${u.saldo.toFixed(2)}</td>
+                            <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+                            <td>
+                                <button onclick="toggleUserRole('${doc.id}', '${u.role}')" style="width: auto; padding: 5px 10px; font-size: 0.7rem;">Alterar Role</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function toggleUserRole(userId, currentRole) {
+            const newRole = currentRole === 'admin' ? 'cliente' : 'admin';
+            if (confirm(`Deseja alterar a role de ${currentRole} para ${newRole}?`)) {
+                db.collection("usuarios").doc(userId).update({ role: newRole })
+                    .then(() => alert("Role atualizada!"))
+                    .catch(err => alert("Erro: " + err));
+            }
+        }
+
+        function loadHistoryList() {
+            db.collection("transacoes").orderBy("dataCriacao", "desc").limit(20)
+                .onSnapshot((snapshot) => {
+                    const tbody = document.getElementById('history-table-body');
+                    tbody.innerHTML = "";
+                    snapshot.forEach(doc => {
+                        const t = doc.data();
+                        const data = t.dataCriacao ? t.dataCriacao.toDate().toLocaleString('pt-BR') : '...';
+                        const valorStr = t.valor ? t.valor.toFixed(2) : '-';
+                        const tipo = t.tipo || 'ganho';
+                        const cor = tipo === 'resgate' ? 'color: var(--error-color);' : 'color: var(--success-color);';
+                        const sinal = tipo === 'resgate' ? '-' : '+';
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${data}</td>
+                            <td>${t.userId.substring(0, 8)}... (${tipo})</td>
+                            <td>${t.produtosStr || t.quantidadeProdutos || '-'}</td>
+                            <td style="${cor}">${sinal} R$ ${valorStr}</td>
+                            <td>${t.status}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        let gradeProdutos = [];
+        let produtosSelecionados = new Set();
+
+        function loadProductsList() {
+            db.collection("produtos").orderBy("nome")
+                .onSnapshot((snapshot) => {
+                    gradeProdutos = [];
+                    const tableBody = document.getElementById('products-table-body');
+                    const selectionList = document.getElementById('products-selection-list');
+                    
+                    tableBody.innerHTML = "";
+                    selectionList.innerHTML = "";
+
+                    if (snapshot.empty) {
+                        tableBody.innerHTML = "<tr><td colspan='3'>Nenhum produto cadastrado.</td></tr>";
+                        selectionList.innerHTML = "<p>Nenhum produto para selecionar.</p>";
+                        return;
+                    }
+
+                    snapshot.forEach(doc => {
+                        const p = doc.data();
+                        const id = doc.id;
+                        gradeProdutos.push({ id, ...p });
+
+                        // Adicionar na tabela de gerenciamento
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${p.nome}</td>
+                            <td>R$ ${p.valorCashback.toFixed(2)}</td>
+                            <td>
+                                <button onclick="removerProduto('${id}')" style="width: auto; padding: 5px 10px; background: var(--error-color); color: white;">Remover</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+
+                        // Adicionar na lista de seleção de lançamento
+                        const div = document.createElement('div');
+                        div.style = "background: #444; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;";
+                        div.id = `select-prod-${id}`;
+                        div.onclick = () => toggleSelectProduct(id);
+                        div.innerHTML = `
+                            <span style="font-size: 0.8rem;">${p.nome}</span>
+                            <span style="font-size: 0.7rem; color: var(--primary-color);">R$ ${p.valorCashback.toFixed(2)}</span>
+                        `;
+                        selectionList.appendChild(div);
+                    });
+                });
+        }
+
+        function toggleSelectProduct(id) {
+            const div = document.getElementById(`select-prod-${id}`);
+            if (produtosSelecionados.has(id)) {
+                produtosSelecionados.delete(id);
+                div.style.background = "#444";
+                div.style.border = "none";
+            } else {
+                produtosSelecionados.add(id);
+                div.style.background = "#555";
+                div.style.border = "1px solid var(--primary-color)";
+            }
+            atualizarValorCalculado();
+        }
+
+        function atualizarValorCalculado() {
+            const qtd = parseInt(document.getElementById('qtd-produtos').value) || 1;
+            let total = 0;
+            produtosSelecionados.forEach(id => {
+                const p = gradeProdutos.find(item => item.id === id);
+                if (p) total += p.valorCashback;
+            });
+            const valorFinal = total * qtd;
+            document.getElementById('valor-calculado-display').innerText = `Valor Total: R$ ${valorFinal.toFixed(2).replace('.', ',')}`;
+        }
+
+        // Listener para quantidade
+        document.getElementById('qtd-produtos').oninput = atualizarValorCalculado;
+
+        function adicionarProduto() {
+            const nome = document.getElementById('new-product-name').value;
+            const valor = parseFloat(document.getElementById('new-product-cashback').value);
+
+            if (!nome || isNaN(valor)) {
+                alert("Preencha o nome e o valor corretamente!");
+                return;
+            }
+
+            db.collection("produtos").add({
+                nome: nome,
+                valorCashback: valor
+            }).then(() => {
+                document.getElementById('new-product-name').value = "";
+                document.getElementById('new-product-cashback').value = "";
+            }).catch(err => alert("Erro: " + err));
+        }
+
+        function removerProduto(id) {
+            if (confirm("Deseja remover este produto da grade?")) {
+                db.collection("produtos").doc(id).delete()
+                    .catch(err => alert("Erro: " + err));
+            }
+        }
+
+        function processarTransacao() {
+            const token = document.getElementById('transaction-token').value.trim();
             const qtd = parseInt(document.getElementById('qtd-produtos').value);
-            const valorAdicionar = qtd * 0.5;
             const status = document.getElementById('admin-status');
 
-            if (!userId) {
-                alert("Informe o ID do cliente!");
+            if (!token) {
+                alert("Escaneie ou cole o token do cliente!");
                 return;
             }
 
             status.innerText = "Processando...";
 
-            const userRef = db.collection("usuarios").doc(userId);
-            const transacaoRef = db.collection("transacoes").doc(); // Novo ID único
+            const transacaoRef = db.collection("transacoes").doc(token);
 
             db.runTransaction((transaction) => {
-                return transaction.get(userRef).then((userDoc) => {
-                    if (!userDoc.exists) {
-                        throw "Usuário não encontrado!";
+                return transaction.get(transacaoRef).then((tDoc) => {
+                    if (!tDoc.exists) {
+                        throw "Token inválido!";
                     }
 
-                    const novoSaldo = (userDoc.data().saldo || 0) + valorAdicionar;
-                    
-                    // Atualizar saldo do usuário
-                    transaction.update(userRef, { saldo: novoSaldo });
+                    const tData = tDoc.data();
+                    if (tData.usado) {
+                        throw "Este QR Code já foi utilizado!";
+                    }
 
-                    // Registrar transação
-                    transaction.set(transacaoRef, {
-                        userId: userId,
-                        adminId: auth.currentUser.uid,
-                        quantidadeProdutos: qtd,
-                        valor: valorAdicionar,
-                        data: firebase.firestore.FieldValue.serverTimestamp(),
-                        tipo: 'ganho'
+                    const tipo = tData.tipo || 'ganho';
+                    let valorFinal = 0;
+                    let produtosStr = "";
+
+                    // Se for ganho, calculamos baseado nos produtos selecionados
+                    if (tipo === 'ganho') {
+                        if (produtosSelecionados.size === 0) {
+                            throw "Selecione ao menos um produto para o cashback!";
+                        }
+
+                        let totalPorUnidade = 0;
+                        const nomesProdutos = [];
+                        produtosSelecionados.forEach(id => {
+                            const p = gradeProdutos.find(item => item.id === id);
+                            if (p) {
+                                totalPorUnidade += p.valorCashback;
+                                nomesProdutos.push(p.nome);
+                            }
+                        });
+                        valorFinal = totalPorUnidade * qtd;
+                        produtosStr = nomesProdutos.join(", ") + ` (x${qtd})`;
+                    } else {
+                        // Se for resgate, o valor já vem no token
+                        valorFinal = tData.valor || 0;
+                    }
+
+                    const userRef = db.collection("usuarios").doc(tData.userId);
+
+                    return transaction.get(userRef).then((uDoc) => {
+                        if (!uDoc.exists) {
+                            throw "Usuário não encontrado!";
+                        }
+
+                        const saldoAtual = uDoc.data().saldo || 0;
+                        let novoSaldo;
+
+                        if (tipo === 'resgate') {
+                            if (saldoAtual < valorFinal) {
+                                throw "Saldo insuficiente do cliente para este resgate!";
+                            }
+                            novoSaldo = saldoAtual - valorFinal;
+                        } else {
+                            novoSaldo = saldoAtual + valorFinal;
+                        }
+
+                        // 1. Atualiza saldo do usuário
+                        transaction.update(userRef, { saldo: novoSaldo });
+
+                        // 2. Marca transação como usada e concluída
+                        transaction.update(transacaoRef, {
+                            usado: true,
+                            status: 'concluido',
+                            adminId: auth.currentUser.uid,
+                            quantidadeProdutos: tipo === 'ganho' ? qtd : 1,
+                            produtosStr: produtosStr,
+                            valor: valorFinal,
+                            dataFinalizacao: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        return { valor: valorFinal, tipo: tipo };
                     });
-
-                    return valorAdicionar;
                 });
-            }).then((valor) => {
-                status.innerText = "Sucesso! R$ " + valor.toFixed(2) + " adicionados.";
-                document.getElementById('user-id').value = "";
+            }).then((result) => {
+                const acao = result.tipo === 'resgate' ? "utilizados" : "adicionados";
+                status.innerText = `Sucesso! R$ ${result.valor.toFixed(2)} ${acao}.`;
+                document.getElementById('transaction-token').value = "";
                 document.getElementById('qtd-produtos').value = 1;
             }).catch((err) => {
                 status.innerText = "Erro: " + err;
@@ -104,6 +505,38 @@
             auth.signOut().then(() => {
                 window.location.href = "index.html";
             });
+        }
+
+        let html5QrCode = null;
+
+        function startScanner() {
+            document.getElementById('reader-container').style.display = 'block';
+            document.getElementById('start-scan-btn').style.display = 'none';
+
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                // Sucesso no Scan
+                document.getElementById('transaction-token').value = decodedText;
+                stopScanner();
+                // Opcional: processar automaticamente após scan
+                // processarTransacao();
+            }).catch((err) => {
+                console.error("Erro ao iniciar câmera:", err);
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('reader-container').style.display = 'none';
+                    document.getElementById('start-scan-btn').style.display = 'block';
+                }).catch((err) => console.error("Erro ao parar scanner", err));
+            } else {
+                document.getElementById('reader-container').style.display = 'none';
+                document.getElementById('start-scan-btn').style.display = 'block';
+            }
         }
     </script>
 </body>
