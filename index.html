@@ -2,17 +2,99 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Postos</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Postos - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-<h1>Money Postos</h1>
-<p>Sistema de Cashback</p>
-<a href="dashboard.html">Entrar</a>
+    <div class="container">
+        <header>
+            <h1>Money Postos</h1>
+            <p>Seu cashback em cada abastecimento</p>
+        </header>
+
+        <main class="auth-card">
+            <div id="login-form">
+                <h2>Entrar</h2>
+                <input type="email" id="login-email" placeholder="E-mail">
+                <input type="password" id="login-password" placeholder="Senha">
+                <button onclick="login()">Entrar</button>
+                <p>Não tem conta? <a href="#" onclick="toggleAuth()">Cadastre-se</a></p>
+            </div>
+
+            <div id="signup-form" style="display: none;">
+                <h2>Cadastro</h2>
+                <input type="text" id="signup-name" placeholder="Nome Completo">
+                <input type="email" id="signup-email" placeholder="E-mail">
+                <input type="password" id="signup-password" placeholder="Senha">
+                <button onclick="signup()">Cadastrar</button>
+                <p>Já tem conta? <a href="#" onclick="toggleAuth()">Faça login</a></p>
+            </div>
+        </main>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        function toggleAuth() {
+            const login = document.getElementById('login-form');
+            const signup = document.getElementById('signup-form');
+            if (login.style.display === 'none') {
+                login.style.display = 'block';
+                signup.style.display = 'none';
+            } else {
+                login.style.display = 'none';
+                signup.style.display = 'block';
+            }
+        }
+
+        function login() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            
+            auth.signInWithEmailAndPassword(email, pass)
+                .then((userCredential) => {
+                    window.location.href = "dashboard.html";
+                })
+                .catch((error) => {
+                    alert("Erro ao entrar: " + error.message);
+                });
+        }
+
+        function signup() {
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const pass = document.getElementById('signup-password').value;
+
+            auth.createUserWithEmailAndPassword(email, pass)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    // Salvar dados extras no Firestore
+                    return db.collection("usuarios").doc(user.uid).set({
+                        nome: name,
+                        email: email,
+                        saldo: 0,
+                        role: 'cliente'
+                    });
+                })
+                .then(() => {
+                    window.location.href = "dashboard.html";
+                })
+                .catch((error) => {
+                    alert("Erro ao cadastrar: " + error.message);
+                });
+        }
+
+        // Verificar se já está logado
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = "dashboard.html";
+            }
+        });
+    </script>
 </body>
 </html>

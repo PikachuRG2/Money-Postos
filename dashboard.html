@@ -2,24 +2,65 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - Money Postos</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Money Postos</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-<h2>Área do Cliente</h2>
-<label>Quantidade de produtos:</label>
-<input type="number" id="qtd" value="1" min="1">
-<button onclick="gerarSaldo()">Calcular</button>
-<p id="resultado"></p>
-<script>
-function gerarSaldo(){
-  let qtd = document.getElementById('qtd').value;
-  let saldo = qtd * 0.5;
-  document.getElementById('resultado').innerText = 
-    "Você vai ganhar R$ " + saldo.toFixed(2);
-}
-</script>
+    <div class="container">
+        <header>
+            <h1>Área do Cliente</h1>
+            <button onclick="logout()" class="btn-logout">Sair</button>
+        </header>
+
+        <main class="dashboard-card">
+            <div class="user-info">
+                <p>Bem-vindo, <span id="user-name">Carregando...</span></p>
+                <div class="balance-container">
+                    <h3>Seu Saldo</h3>
+                    <p class="balance">R$ <span id="user-balance">0,00</span></p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <p>Apresente seu QR Code no posto para ganhar cashback!</p>
+                <!-- Simulação de QR Code -->
+                <div id="qrcode-placeholder">
+                    [ QR CODE ]
+                    <p id="user-id-display"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Buscar dados do usuário em tempo real
+                db.collection("usuarios").doc(user.uid).onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('user-name').innerText = data.nome;
+                        document.getElementById('user-balance').innerText = data.saldo.toFixed(2).replace('.', ',');
+                        document.getElementById('user-id-display').innerText = "ID: " + user.uid;
+                    }
+                });
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        }
+    </script>
 </body>
 </html>
