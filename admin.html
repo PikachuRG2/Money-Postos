@@ -165,9 +165,9 @@
                     <thead>
                         <tr>
                             <th>Nome</th>
-                            <th>Email</th>
+                            <th>Contato</th>
                             <th>Saldo</th>
-                            <th>Role</th>
+                            <th>Cargo</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -305,7 +305,10 @@
                         
                         tr.innerHTML = `
                             <td>${u.nome} ${isBlocked ? '🚫' : ''}</td>
-                            <td>${u.email}</td>
+                            <td>
+                                <div style="font-size: 0.85rem;">${u.email}</div>
+                                <div style="font-size: 0.75rem; color: #aaa;">${u.telefone || 'Sem tel.'}</div>
+                            </td>
                             <td>R$ ${u.saldo.toFixed(2)}</td>
                             <td><span class="role-badge role-${u.role}">${u.role}</span></td>
                             <td style="display: flex; gap: 5px;">
