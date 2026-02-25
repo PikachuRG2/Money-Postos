@@ -98,6 +98,11 @@
                 return;
             }
 
+            // Desabilitar o botão para evitar múltiplos cliques
+            const btn = document.querySelector('#signup-form button');
+            btn.disabled = true;
+            btn.innerText = "Cadastrando...";
+
             auth.createUserWithEmailAndPassword(email, pass)
                 .then((userCredential) => {
                     const user = userCredential.user;
@@ -112,21 +117,27 @@
                     });
                 })
                 .then(() => {
+                    // Após salvar os dados, redirecionar
                     window.location.href = "dashboard.html";
                 })
                 .catch((error) => {
                     alert("Erro ao cadastrar: " + error.message);
+                    btn.disabled = false;
+                    btn.innerText = "Cadastrar";
                 });
         }
 
-        // Verificar se já está logado e redirecionar
+        // Verificar se já está logado e redirecionar apenas se não estivermos no meio de um cadastro
         auth.onAuthStateChanged((user) => {
             if (user) {
+                // Pequeno delay para garantir que o Firestore tenha tempo de processar o documento recém-criado
                 db.collection("usuarios").doc(user.uid).get().then((doc) => {
-                    if (doc.exists && doc.data().role === 'admin') {
-                        window.location.href = "admin.html";
-                    } else {
-                        window.location.href = "dashboard.html";
+                    if (doc.exists) {
+                        if (doc.data().role === 'admin') {
+                            window.location.href = "admin.html";
+                        } else {
+                            window.location.href = "dashboard.html";
+                        }
                     }
                 });
             }
