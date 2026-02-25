@@ -1,0 +1,24 @@
+{
+    "name": "Posto Paraíso - Cashback",
+    "short_name": "Posto Paraíso",
+    "description": "Seu cashback em cada abastecimento no Posto Paraíso",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#f1c40f",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

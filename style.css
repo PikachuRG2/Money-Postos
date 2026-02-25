@@ -105,6 +105,16 @@ button:active {
     color: white;
 }
 
+.btn-install {
+    background: #2ecc71 !important;
+    color: white !important;
+    margin-top: 10px;
+}
+
+.btn-install:hover {
+    background: #27ae60 !important;
+}
+
 p {
     margin-top: 15px;
     font-size: 0.9rem;

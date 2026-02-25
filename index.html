@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Money Postos - Login</title>
     <link rel="stylesheet" href="style.css">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f1c40f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -14,7 +21,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Money Postos</h1>
+            <img src="icon-192x192.png" alt="Logo Posto Paraíso" style="width: 120px; border-radius: 20px; margin-bottom: 15px;">
+            <h1>Posto Paraíso</h1>
             <p>Seu cashback em cada abastecimento</p>
         </header>
 
@@ -35,6 +43,10 @@
                 <input type="password" id="signup-password" placeholder="Senha">
                 <button onclick="signup()">Cadastrar</button>
                 <p>Já tem conta? <a href="#" onclick="toggleAuth()">Faça login</a></p>
+            </div>
+
+            <div id="install-container" style="display: none; margin-top: 20px; border-top: 1px solid #444; padding-top: 20px;">
+                <button id="btn-install" class="btn-install">📲 Instalar Aplicativo</button>
             </div>
         </main>
     </div>
@@ -119,6 +131,51 @@
                 });
             }
         });
+
+        // Registrar Service Worker para PWA
+        let deferredPrompt;
+        const installContainer = document.getElementById('install-container');
+        const btnInstall = document.getElementById('btn-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevenir o Chrome 67 e versões anteriores de mostrar automaticamente o prompt
+            e.preventDefault();
+            // Guardar o evento para que possa ser acionado mais tarde.
+            deferredPrompt = e;
+            // Atualizar a interface do usuário para notificar o usuário que ele pode instalar o PWA
+            installContainer.style.display = 'block';
+        });
+
+        btnInstall.addEventListener('click', (e) => {
+            // Esconder a interface do usuário que notifica o usuário que ele pode instalar o PWA
+            installContainer.style.display = 'none';
+            // Mostrar o prompt
+            deferredPrompt.prompt();
+            // Aguardar a resposta do usuário ao prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Usuário aceitou a instalação do PWA');
+                } else {
+                    console.log('Usuário recusou a instalação do PWA');
+                }
+                deferredPrompt = null;
+            });
+        });
+
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('PWA instalado com sucesso!');
+            installContainer.style.display = 'none';
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then((registration) => {
+                    console.log('SW registrado com sucesso!', registration.scope);
+                }).catch((err) => {
+                    console.log('Erro ao registrar SW:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
