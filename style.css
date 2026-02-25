@@ -22,12 +22,29 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .container {
     width: 100%;
     max-width: 400px;
+    padding: 20px;
+}
+
+/* Otimizações para Mobile e iPhone */
+input, button {
+    -webkit-appearance: none;
+    border-radius: 8px;
+}
+
+input {
+    font-size: 16px !important; /* Evita zoom automático no iPhone ao focar */
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
 }
 
 header {
